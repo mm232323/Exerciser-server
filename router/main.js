@@ -50,4 +50,65 @@ router.post("/delete-deck", (req, res) => {
   res.json({ message: "card deleted successfully" });
 });
 
+router.post("/get-deck", async (req, res) => {
+  const email = req.body.email;
+  const deckName = req.body.deckName;
+  const deck = (await usersCollection.findOne({ email })).decks.filter(
+    (deck) => deck.name == deckName
+  )[0];
+  res.json({ deck });
+});
+
+router.post("/set-tests", async (req, res) => {
+  const { email, tests, state, deck } = req.body;
+  const user = await usersCollection.findOne({ email });
+  user.progress = { state, deck, tests };
+  usersCollection.deleteOne({ email });
+  usersCollection.insertOne(user);
+  res.json({ message: "progress updated successfully!" });
+});
+
+router.post("/set-answer", async (req, res) => {
+  const { testIdx, answer, email } = req.body;
+  const user = await usersCollection.findOne({ email });
+  user.progress.tests = user.progress.tests.map((test, idx) =>
+    idx == testIdx
+      ? {
+          name: test.name,
+          properties: test.properties,
+          answer,
+          correctAnswer: test.correctAnswer,
+        }
+      : test
+  );
+  usersCollection.deleteOne({ email });
+  usersCollection.insertOne(user);
+  res.json({ message: "answer setted successfully!" });
+});
+
+router.post("/set-practiced", async (req, res) => {
+  const { deck, language, maxScore, score, finalScore, tests, email } =
+    req.body;
+  usersCollection.updateOne(
+    { email },
+    {
+      $push: {
+        practiced: {
+          deck,
+          language,
+          maxScore,
+          score,
+          finalScore,
+          tests,
+          state: "active",
+        },
+      },
+      $set: {
+        progress: { state: "off", deck: "", tests: [] },
+      },
+    }
+  );
+  res.json({ message: "practice setted successfully" });
+});
+
 module.exports = router;
