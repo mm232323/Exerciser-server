@@ -111,4 +111,16 @@ router.post("/set-practiced", async (req, res) => {
   res.json({ message: "practice setted successfully" });
 });
 
+router.post("/de-activate-practice", async (req, res) => {
+  const email = req.body.email;
+  const user = usersCollection.findOne({ email });
+  user.practiced[user.practiced.length - 1] = {
+    ...user.practiced,
+    state: "off",
+  };
+  usersCollection.deleteOne({ email });
+  usersCollection.insertOne(user);
+  res.json({ message: "the practice de activated successfully" });
+});
+
 module.exports = router;
