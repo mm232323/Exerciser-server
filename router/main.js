@@ -38,8 +38,7 @@ router.post("/create-card", async (req, res) => {
     }
     return deck;
   });
-  usersCollection.deleteOne({ email });
-  usersCollection.insertOne(user);
+  usersCollection.updateOne({ email }, { $set: { decks: user.decks } });
   res.json({ message: "card created successfully" });
 });
 
@@ -63,13 +62,12 @@ router.post("/set-tests", async (req, res) => {
   const { email, tests, state, deck } = req.body;
   const user = await usersCollection.findOne({ email });
   user.progress = { state, deck, tests };
-  usersCollection.deleteOne({ email });
-  usersCollection.insertOne(user);
+  usersCollection.updateOne({ email }, { $set: { progress: user.progress } });
   res.json({ message: "progress updated successfully!" });
 });
 
 router.post("/set-answer", async (req, res) => {
-  const { testIdx, answer, email } = req.body;
+  const { testIdx, answer, email, deck } = req.body;
   const user = await usersCollection.findOne({ email });
   user.progress.tests = user.progress.tests.map((test, idx) =>
     idx == testIdx
@@ -81,8 +79,10 @@ router.post("/set-answer", async (req, res) => {
         }
       : test
   );
-  usersCollection.deleteOne({ email });
-  usersCollection.insertOne(user);
+  usersCollection.updateOne(
+    { email },
+    { $set: { progress: { state: "on", deck, tests: user.progress.tests } } }
+  );
   res.json({ message: "answer setted successfully!" });
 });
 
@@ -118,8 +118,7 @@ router.post("/de-activate-practice", async (req, res) => {
     ...user.practiced,
     state: "off",
   };
-  usersCollection.deleteOne({ email });
-  usersCollection.insertOne(user);
+  usersCollection.updateOne({ email }, { $set: { practiced: user.practiced } });
   res.json({ message: "the practice de activated successfully" });
 });
 
